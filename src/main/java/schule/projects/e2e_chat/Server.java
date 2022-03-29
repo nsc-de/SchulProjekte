@@ -1,6 +1,8 @@
 package schule.projects.e2e_chat;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,24 +10,25 @@ public class Server implements TCPServer.TCPServerHandler {
 
     private final List<TCPServer> servers = new ArrayList<>();
     private final long p;
-    private final long q;
-    private boolean started = false;
+    private final long s;
 
-    public Server(long p, long q) {
+    public Server(long p, long s) {
         this.p = p;
-        this.q = q;
+        this.s = s;
     }
 
     public Server() {
         this.p = Util.getRandomPrime();
-        this.q = Util.getRandomBelow(p);
+        this.s = Util.getRandomBelow(p);
+        System.out.println("Server's P: " + p);
+        System.out.println("Server's S: " + s);
     }
 
     public long getP() {
         return p;
     }
-    public long getQ() {
-        return q;
+    public long getS() {
+        return s;
     }
 
     public void listen(int port) {
@@ -47,8 +50,55 @@ public class Server implements TCPServer.TCPServerHandler {
     @Override
     public void handleMessage(TCPClientMessageEvent e) {
         System.out.println("Receiving message " + e.getMessage() + " from " + e.getClient().getSocket().getInetAddress());
+        handleData(e.getClient(), e.getData());
+    }
+
+    private void handleData(TCPServer.ClientHandler client, byte[] data) {
+        int pos = 0;
+        switch (data[0]) {
+            case Util.ByteTags.TAG_GET_P -> {
+                ByteBuffer bb = ByteBuffer.allocate(9);
+                bb.put(Util.ByteTags.TAG_GET_P);
+                bb.putLong(1, getP());
+                send(client, bb.array());
+                pos = 1;
+            }
+            case Util.ByteTags.TAG_GET_S -> {
+                ByteBuffer bb = ByteBuffer.allocate(9);
+                bb.put(Util.ByteTags.TAG_GET_S);
+                bb.putLong(1, getS());
+                send(client, bb.array());
+                pos = 1;
+            }
+            case Util.ByteTags.TAG_GET_PS -> {
+                ByteBuffer bb = ByteBuffer.allocate(17);
+                bb.put(Util.ByteTags.TAG_GET_PS);
+                bb.putLong(1, getP());
+                bb.putLong(9, getS());
+                send(client, bb.array());
+                pos = 1;
+            }
+            default -> sendError(client, "ERROR: Unknown Tag sent");
+        }
+
+        if(pos < data.length) {
+            byte[] sarr = new byte[data.length - pos];
+            System.arraycopy(data, pos, sarr, 0, sarr.length);
+            handleData(client, sarr);
+        }
+    }
+
+    private void sendError(TCPServer.ClientHandler client, String message) {
+        ByteBuffer bb = ByteBuffer.allocate(5 + message.length());
+        bb.put(Util.ByteTags.TAG_ERROR);
+        bb.putInt(1, message.length());
+        bb.put(5, message.getBytes(StandardCharsets.UTF_8));
+        send(client, bb.array());
+    }
+
+    private void send(TCPServer.ClientHandler client, byte[] msg) {
         try {
-            e.getClient().send("Nachricht erhalten");
+            client.send(msg);
         } catch (IOException ex) {
             ex.printStackTrace();
         }

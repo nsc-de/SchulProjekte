@@ -8,7 +8,7 @@ public class Main {
     private final static String SERVER_IP = "localhost";
     private final static int SERVER_PORT = 5555;
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         String auswahl;
         if(args.length > 0) {
             auswahl = args[0];
@@ -31,7 +31,6 @@ public class Main {
                 System.out.println("Starte Client mit IP " + SERVER_IP + " und Port " + SERVER_PORT);
                 Client client = new Client();
                 client.connect(SERVER_IP, SERVER_PORT);
-                client.send("Hallo");
             }
             default -> System.out.println("Falsche Eingabe");
 

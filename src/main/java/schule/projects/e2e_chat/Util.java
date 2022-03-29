@@ -8,9 +8,10 @@ public class Util {
 
     public static class ByteTags {
 
-        public static final byte TAG_GET_P = 0x00;
-        public static final byte TAG_GET_Q = 0x01;
-        public static final byte TAG_GET_PQ = 0x02;
+        public static final byte TAG_ERROR = 0x00;
+        public static final byte TAG_GET_P = 0x01;
+        public static final byte TAG_GET_S = 0x02;
+        public static final byte TAG_GET_PS = 0x03;
 
     }
 
@@ -41,7 +42,7 @@ public class Util {
     }
 
     public static long getRandomBelow(long n) {
-        return random.nextLong() % n;
+        return Math.abs(random.nextLong()) % n;
     }
 
     public static long customPow(long base, long exp, long mod) {
@@ -52,4 +53,17 @@ public class Util {
         return result;
     }
 
+    public static long powerMod(long base, long exp, long mod) {
+        if(exp == 0) return 1;
+        if(exp == 1) return base % mod;
+        long result = 1;
+        if((exp % 2) == 1) {
+            result *= base;
+            result %= mod;
+            exp -= 1;
+        }
+        long tmp = powerMod(base, exp >> 1, mod);
+        result *= (tmp * tmp) % mod;
+        return result % mod;
+    }
 }
